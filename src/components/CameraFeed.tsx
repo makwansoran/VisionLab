@@ -318,7 +318,7 @@ export function FeedTile({
     video.removeAttribute("src");
     video.srcObject = feed.stream;
     if (feed.videoUrl) video.src = feed.videoUrl;
-    if (feed.stream || feed.videoUrl) void video.play();
+    if (feed.stream || feed.videoUrl) void video.play().catch(() => undefined);
     const sync = () => setPaused(video.paused);
     video.addEventListener("play", sync);
     video.addEventListener("pause", sync);
@@ -380,4 +380,12 @@ export function FeedTile({
       )}
     </section>
   );
+}
+
+function PlayIcon() {
+  return <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M8 5.5v13l11-6.5-11-6.5Z" /></svg>;
+}
+
+function PauseIcon() {
+  return <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M7 5h3.5v14H7zM13.5 5H17v14h-3.5z" /></svg>;
 }

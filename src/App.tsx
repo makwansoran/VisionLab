@@ -85,9 +85,10 @@ export function App() {
         }).catch(() => undefined).finally(() => restoringVideoIds.current.delete(cameraFeed.id));
         return;
       }
-      add(cameraFeed.model, cameraFeed.deviceId, cameraFeed.name, undefined, cameraFeed.id);
+      const id = add(cameraFeed.model, cameraFeed.deviceId, cameraFeed.name, undefined, cameraFeed.id);
+      if (!settings.autoStart) void start(id);
     });
-  }, [activeDashboard, feeds, add, addVideo]);
+  }, [activeDashboard, feeds, add, addVideo, settings.autoStart, start]);
 
   useEffect(() => {
     const id =

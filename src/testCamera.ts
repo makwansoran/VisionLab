@@ -20,14 +20,17 @@ export function openTestCamera(size: { width: number; height: number }): MediaSt
   canvas.width = size.width;
   canvas.height = size.height;
   const context = canvas.getContext("2d");
+  if (!context) throw new Error("The testing feed could not create a canvas.");
+  if (typeof canvas.captureStream !== "function") throw new Error("This browser does not support the testing feed.");
   const stream = canvas.captureStream(FPS);
   const track = stream.getVideoTracks()[0];
+  if (!track) throw new Error("The testing feed could not create a video stream.");
   const started = Date.now();
   let frame = 0;
 
   const draw = () => {
     // Stopping the track is how feeds let go of a camera; the loop ends with it.
-    if (!context || !track || track.readyState === "ended") return;
+    if (track.readyState === "ended") return;
     const { width, height } = canvas;
     const elapsed = (Date.now() - started) / 1000;
     context.fillStyle = "#1b1d22";
