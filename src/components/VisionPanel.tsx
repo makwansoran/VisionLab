@@ -64,6 +64,7 @@ export function VisionPanel({
         <CameraCanvas
           feeds={canvasItems}
           start={onStartFeed}
+          onTrain={onTrain}
           onCapture={async (cameraId, blob, width, height) => {
             await saveCapture({
               id: crypto.randomUUID(),
