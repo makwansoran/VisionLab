@@ -1,6 +1,9 @@
 import { useCallback, useEffect, useRef, useState } from "react";
+import type { Session } from "@supabase/supabase-js";
 import { AddCameraModal } from "./components/AddCameraModal";
 import { SettingsPanel } from "./components/SettingsPanel";
+import { LoginPage } from "./components/LoginPage";
+import { isAuthConfigured, subscribeToAuthChanges } from "./auth/authService";
 import { Sidebar, type SectionId } from "./components/Sidebar";
 import { HomeOverview } from "./components/HomeOverview";
 import { VisionPanel } from "./components/VisionPanel";
@@ -25,6 +28,7 @@ function viewKey(section: SectionId, place: VisionPlace) {
 export function App() {
   const [section, setSection] = useState<SectionId>("vision");
   const [settings, setSettings] = useState<AppSettings>(loadSettings);
+  const [authSession, setAuthSession] = useState<Session | null>(null);
   const [addingCamera, setAddingCamera] = useState(false);
   const [connectedId, setConnectedId] = useState<string | null>(() => localStorage.getItem("visionlab-connected-camera"));
   const restored = useRef(false);
@@ -33,6 +37,11 @@ export function App() {
   }, []);
   const updateSettings = useCallback((patch: Partial<AppSettings>) => {
     setSettings((current) => ({ ...current, ...patch }));
+  }, []);
+  useEffect(() => {
+    if (!isAuthConfigured) return;
+    const subscription = subscribeToAuthChanges(setAuthSession);
+    return () => subscription.unsubscribe();
   }, []);
   useEffect(() => {
     document.documentElement.dataset.theme = settings.theme;
@@ -81,8 +90,9 @@ export function App() {
     <div className="app">
       <Sidebar
         active={section}
-        name={settings.displayName.trim() || "User"}
+        name={authSession?.user.email || settings.displayName.trim() || "User"}
         image={settings.profileImage}
+        onProfileClick={() => setSection("login")}
         plan={plan?.name ?? null}
         onChange={(id) => {
           if (id === "vision") vision.visit({ view: "list" });
@@ -192,6 +202,8 @@ export function App() {
               });
             }}
           />
+        ) : section === "login" ? (
+          <LoginPage session={authSession} onSignedIn={() => setSection("vision")} />
         ) : section === "analyse" ? (
           <AnalysePanel />
         ) : section === "notifications" ? (

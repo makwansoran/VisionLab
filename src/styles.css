@@ -2697,6 +2697,7 @@ button {
 }
 
 .user-area {
+  width: 100%;
   height: 40px;
   display: flex;
   align-items: center;
@@ -2704,7 +2705,18 @@ button {
   gap: 0;
   margin-top: 2px;
   color: var(--text);
+  border: 0;
+  padding: 0;
+  background: transparent;
+  font: inherit;
+  cursor: pointer;
   white-space: nowrap;
+}
+
+.user-area:hover,
+.user-area:focus-visible {
+  background: var(--hover);
+  border-radius: 8px;
 }
 
 .sidebar:hover .user-area,
@@ -2712,6 +2724,167 @@ button {
   justify-content: flex-start;
   gap: 12px;
   padding: 0 6px;
+}
+
+.login-page {
+  flex: 1;
+  min-width: 0;
+  min-height: 0;
+  display: grid;
+  place-items: center;
+  overflow: auto;
+  padding: 32px 20px;
+  background: var(--bg);
+  color: var(--text);
+}
+
+.login-card {
+  width: min(100%, 380px);
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+}
+
+.login-logo {
+  width: 38px;
+  height: 38px;
+  object-fit: contain;
+  align-self: center;
+  margin-bottom: 20px;
+}
+
+.login-card h1 {
+  margin: 0;
+  text-align: center;
+  font-size: 25px;
+  font-weight: 600;
+  letter-spacing: -0.4px;
+}
+
+.login-subtitle {
+  margin: 8px 0 26px;
+  color: var(--muted);
+  text-align: center;
+}
+
+.login-socials,
+.login-form {
+  display: flex;
+  flex-direction: column;
+  gap: 11px;
+}
+
+.login-provider,
+.login-submit {
+  height: 42px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: var(--side);
+  color: var(--text);
+  font-weight: 500;
+  transition: background 140ms ease, border-color 140ms ease;
+}
+
+.login-provider:hover,
+.login-provider:focus-visible {
+  background: var(--hover);
+  border-color: var(--muted);
+}
+
+.login-provider svg {
+  width: 18px;
+  height: 18px;
+}
+
+.login-divider {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin: 22px 0;
+  color: var(--muted);
+  font-size: 12px;
+  white-space: nowrap;
+}
+
+.login-divider::before,
+.login-divider::after {
+  content: "";
+  height: 1px;
+  flex: 1;
+  background: var(--border);
+}
+
+.login-form label {
+  margin-bottom: -5px;
+  color: var(--text);
+  font-size: 12px;
+  font-weight: 500;
+}
+
+.login-form input {
+  width: 100%;
+  height: 40px;
+  padding: 0 11px;
+  border: 1px solid var(--border);
+  border-radius: 7px;
+  outline: none;
+  background: var(--side);
+  color: var(--text);
+  font: inherit;
+}
+
+.login-form input:focus {
+  border-color: var(--muted);
+}
+
+.login-submit {
+  margin-top: 5px;
+  border-color: transparent;
+  background: var(--start-bg);
+  color: var(--start-fg);
+  font-weight: 600;
+}
+
+.login-submit:hover {
+  opacity: 0.88;
+}
+
+.login-provider:disabled,
+.login-submit:disabled {
+  cursor: wait;
+  opacity: 0.65;
+}
+
+.login-message {
+  margin: 14px 0 0;
+  color: var(--muted);
+  text-align: center;
+  line-height: 1.5;
+}
+
+.login-message.is-error {
+  color: var(--danger);
+}
+
+.login-footer {
+  margin: 22px 0 0;
+  color: var(--muted);
+  text-align: center;
+}
+
+.login-footer button {
+  padding: 0;
+  border: 0;
+  background: none;
+  color: var(--text);
+  font: inherit;
+  font-weight: 600;
+  text-decoration: underline;
+  text-underline-offset: 3px;
 }
 
 .user-area img {

@@ -3,7 +3,7 @@ import { createSiloBridge, type BridgeStatus, type SiloBridge } from "./silo-bri
 import { createMemoryStore, type DataStore } from "./store";
 
 const SUPABASE_URL = ((import.meta.env.VITE_SUPABASE_URL as string | undefined) ?? "").trim();
-const SUPABASE_KEY = ((import.meta.env.VITE_SUPABASE_KEY as string | undefined) ?? "").trim();
+const SUPABASE_KEY = ((import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY as string | undefined) ?? "").trim();
 
 // The Pi through Supabase when .env names a project. Tests never reach the network, whatever .env says.
 export const DATA_SOURCE: "supabase" | "none" = SUPABASE_URL && SUPABASE_KEY && import.meta.env.MODE !== "test" ? "supabase" : "none";

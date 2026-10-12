@@ -1,6 +1,6 @@
 import type { ReactElement } from "react";
 
-export type SectionId = "vision" | "analyse" | "notifications" | "settings";
+export type SectionId = "vision" | "analyse" | "notifications" | "settings" | "login";
 
 const items: { id: SectionId; label: string; icon: () => ReactElement }[] = [
   { id: "vision", label: "Home", icon: IconHome },
@@ -13,12 +13,14 @@ export function Sidebar({
   onChange,
   name,
   image,
+  onProfileClick,
   plan,
 }: {
   active: SectionId;
   onChange: (id: SectionId) => void;
   name: string;
   image: string;
+  onProfileClick: () => void;
   plan: string | null;
 }) {
   return (
@@ -61,8 +63,9 @@ export function Sidebar({
       <button
         type="button"
         className="user-area"
-        title={name}
-        onClick={() => onChange("settings")}
+        title={`Sign in as ${name}`}
+        onClick={onProfileClick}
+        aria-label="Open sign in page"
       >
         <img src={image || "/profile.svg"} alt="" />
         <span>{name}</span>
