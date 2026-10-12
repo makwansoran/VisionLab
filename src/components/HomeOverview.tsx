@@ -181,8 +181,8 @@ export function HomeOverview({
         <section className="home-box" aria-label="Dashboards">
           <div className="home-box-head">
             <h2>Dashboards</h2>
-            <button type="button" onClick={() => setDraft("")}>
-              Add dashboard
+            <button type="button" className="home-add" aria-label="Add dashboard" onClick={() => setDraft("")}>
+              <IconPlus />
             </button>
           </div>
           {draft !== null && (

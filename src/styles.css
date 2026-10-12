@@ -3318,3 +3318,781 @@ button {
 .settings-file:hover {
   background: var(--hover);
 }
+
+/* The user area is a button that opens Settings, where Plan and Usage live, and shows the plan while the sidebar is open. */
+
+.user-area {
+  padding: 0;
+  border: 0;
+  border-radius: 8px;
+  background: transparent;
+}
+
+.user-area:hover,
+.user-area:focus-visible {
+  background: var(--hover);
+}
+
+.user-area span {
+  text-overflow: ellipsis;
+}
+
+.user-area .account-badge {
+  display: none;
+  flex: none;
+  overflow: visible;
+  font-size: 11px;
+  line-height: 1.4;
+}
+
+.sidebar:hover .user-area .account-badge,
+.sidebar:focus-within .user-area .account-badge {
+  display: inline-block;
+}
+
+/* Plan and usage: two groups in Settings that fold open, and the badge in the sidebar that points there. */
+
+.settings-fold {
+  display: block;
+}
+
+.settings-fold > summary {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 0 4px;
+  color: var(--muted);
+  cursor: pointer;
+}
+
+.settings-fold > summary h2 {
+  margin: 0;
+  padding: 0;
+}
+
+.settings-fold > summary span {
+  color: var(--muted);
+  font-size: 12px;
+}
+
+.settings-fold > summary svg {
+  width: 16px;
+  height: 16px;
+  margin-left: auto;
+  flex: none;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1.7;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  transition: transform 160ms ease;
+}
+
+.settings-fold[open] > summary svg {
+  transform: rotate(90deg);
+}
+
+/* Open, the rows carry the facts; the one-line summary would only repeat them. */
+.settings-fold[open] > summary span {
+  display: none;
+}
+
+.settings-fold > summary:hover,
+.settings-fold > summary:focus-visible,
+.settings-fold > summary:hover h2,
+.settings-fold > summary:focus-visible h2 {
+  color: var(--text);
+}
+
+.settings-fold > summary:focus-visible {
+  outline: 2px solid var(--muted);
+  outline-offset: 2px;
+  border-radius: 6px;
+}
+
+.settings-fold > .settings-card {
+  margin-top: 8px;
+}
+
+.settings-value {
+  color: var(--muted);
+  font-size: 12px;
+  font-variant-numeric: tabular-nums;
+}
+
+.settings-value-big {
+  color: var(--text);
+  font-size: 20px;
+  font-weight: 500;
+}
+
+.settings-block {
+  padding: 0 14px 14px;
+}
+
+.settings-block + .settings-row {
+  border-top: 1px solid var(--border);
+}
+
+.settings-empty {
+  margin: 0;
+  padding: 12px 14px;
+  color: var(--muted);
+  font-size: 12px;
+}
+
+.account-meter {
+  height: 6px;
+  overflow: hidden;
+  border-radius: 999px;
+  background: var(--border);
+}
+
+.account-meter-fill {
+  height: 100%;
+  border-radius: inherit;
+  background: var(--text);
+}
+
+.account-meter-fill.is-high {
+  background: var(--danger);
+}
+
+/* The plot is 120px tall; the padding leaves room for the value label above a full bar. */
+.account-bars {
+  display: flex;
+  align-items: flex-end;
+  gap: 2px;
+  height: 140px;
+  padding-top: 20px;
+}
+
+.account-bar-col {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  align-items: center;
+  justify-content: flex-end;
+  min-width: 0;
+  height: 100%;
+}
+
+.account-bar {
+  width: 100%;
+  max-width: 24px;
+  border-radius: 3px 3px 0 0;
+  background: var(--muted);
+}
+
+.account-bar-col:hover .account-bar {
+  background: var(--text);
+}
+
+.account-bar-value {
+  margin-bottom: 4px;
+  color: var(--muted);
+  font-size: 11px;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+
+.account-bar-days {
+  display: flex;
+  gap: 2px;
+  color: var(--muted);
+  font-size: 11px;
+}
+
+.account-bar-days span {
+  display: flex;
+  flex: 1;
+  justify-content: center;
+  min-width: 0;
+  white-space: nowrap;
+}
+
+.account-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 12px;
+}
+
+.account-table th,
+.account-table td {
+  padding: 4px 8px;
+  border-bottom: 1px solid var(--border);
+  text-align: left;
+}
+
+.account-table th:first-child,
+.account-table td:first-child {
+  padding-left: 0;
+}
+
+.account-table th:last-child,
+.account-table td:last-child {
+  padding-right: 0;
+}
+
+.account-table th {
+  color: var(--muted);
+  font-weight: 500;
+}
+
+.account-table th + th,
+.account-table td + td {
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+}
+
+.account-table tfoot td {
+  border-bottom: 0;
+  font-weight: 600;
+}
+
+.account-badge {
+  display: inline-block;
+  padding: 2px 8px;
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  color: var(--muted);
+  font-size: 11px;
+  font-weight: 500;
+  line-height: 1.4;
+  white-space: nowrap;
+}
+
+.account-warn {
+  color: var(--danger);
+}
+
+/* Analyse: the silo and its watcher, ported from Spectr OS. Grey until something is wrong. */
+
+.page-seg {
+  display: flex;
+  gap: 4px;
+}
+
+.page-seg button {
+  padding: 6px 12px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: transparent;
+  color: var(--muted);
+  font-size: 12px;
+}
+
+.page-seg button:hover,
+.page-seg button:focus-visible,
+.page-seg button.active {
+  background: var(--hover);
+  color: var(--text);
+}
+
+.analyse {
+  --ana-critical: #e85d5d;
+  --ana-warn: #f0a020;
+  --ana-ok: #3a8a9c;
+  --ana-off: #a8b0bb;
+  --ana-track: color-mix(in srgb, var(--muted) 35%, var(--side));
+}
+
+:root[data-theme="light"] .analyse {
+  --ana-critical: #d64545;
+  --ana-warn: #9a6200;
+  --ana-off: #7a838f;
+}
+
+.analyse .home-head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px 20px;
+}
+
+.ana-body {
+  flex: none;
+}
+
+.ana-h2 {
+  margin: 16px 0 8px;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--muted);
+}
+
+.ana-status .ana-h2 {
+  margin-top: 8px;
+}
+
+.ana-muted {
+  margin: 0;
+  color: var(--muted);
+  font-size: 13px;
+}
+
+.ana-warn {
+  color: var(--ana-warn);
+}
+
+.ana-cards {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(130px, 1fr));
+  gap: 12px;
+}
+
+.ana-card {
+  padding: 12px 14px;
+  border: 1px solid var(--border);
+  border-left-width: 4px;
+  border-radius: 12px;
+  background: var(--side);
+}
+
+.ana-card-big {
+  grid-column: span 2;
+}
+
+.ana-card-label {
+  font-size: 12px;
+  color: var(--muted);
+}
+
+.ana-card-value {
+  margin-top: 4px;
+  font-size: 22px;
+  font-weight: 500;
+  line-height: 1.1;
+}
+
+.ana-card-big .ana-card-value {
+  font-size: 32px;
+}
+
+.ana-card-sub {
+  margin-top: 4px;
+  font-size: 12px;
+  line-height: 1.4;
+  color: var(--muted);
+}
+
+.ana-card-ok {
+  border-left-color: var(--ana-ok);
+}
+
+.ana-card-muted {
+  border-left-color: var(--ana-off);
+}
+
+.ana-card-muted .ana-card-value {
+  color: var(--muted);
+}
+
+.ana-card-warn {
+  border-left-color: var(--ana-warn);
+}
+
+.ana-card-warn .ana-card-value {
+  color: var(--ana-warn);
+}
+
+.ana-card-critical {
+  border-left-color: var(--ana-critical);
+}
+
+.ana-card-critical .ana-card-value {
+  color: var(--ana-critical);
+}
+
+.ana-tiles {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+  gap: 12px;
+}
+
+.ana-tile {
+  padding: 14px 16px;
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  background: var(--side);
+}
+
+.ana-tile-label {
+  font-size: 12px;
+  color: var(--muted);
+}
+
+.ana-tile-value {
+  margin-top: 4px;
+  font-size: 32px;
+  font-weight: 500;
+  line-height: 1.1;
+}
+
+.ana-tile-sub {
+  margin-top: 4px;
+  font-size: 12px;
+  color: var(--muted);
+}
+
+.ana-tile-critical .ana-tile-sub {
+  color: var(--ana-critical);
+}
+
+.ana-tile-warn .ana-tile-sub {
+  color: var(--ana-warn);
+}
+
+/* Timetable: OK is teal so the track never blends into the panel, red and amber stay the loud ones,
+   and silence is hatched so it reads as "nothing known" rather than as a state of the silo. */
+
+.ana-tt {
+  font-size: 11px;
+  color: var(--muted);
+}
+
+.ana-tt-head,
+.ana-tt-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.ana-tt-row {
+  margin-top: 4px;
+}
+
+.ana-tt-label {
+  width: 84px;
+  flex-shrink: 0;
+  font-size: 12px;
+  color: var(--muted);
+  text-align: right;
+  white-space: nowrap;
+}
+
+.ana-tt-hours {
+  position: relative;
+  flex: 1;
+  height: 16px;
+}
+
+.ana-tt-hours span {
+  position: absolute;
+  top: 0;
+}
+
+.ana-tt-hours-end {
+  right: 0;
+}
+
+.ana-tt-track {
+  position: relative;
+  flex: 1;
+  height: 18px;
+  overflow: hidden;
+  border-radius: 4px;
+  background: var(--ana-track);
+}
+
+.ana-tt-dense .ana-tt-row {
+  margin-top: 3px;
+}
+
+.ana-tt-dense .ana-tt-label {
+  font-size: 11px;
+}
+
+.ana-tt-dense .ana-tt-track {
+  height: 12px;
+}
+
+.ana-tt-run {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  right: 0;
+  background: var(--ana-ok);
+}
+
+.ana-tt-grid {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  width: 1px;
+  background: var(--bg);
+}
+
+.ana-tt-now {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  width: 2px;
+  background: var(--text);
+}
+
+/* A short alarm on a full day would be thinner than a pixel; keep it visible. */
+.ana-tt-block {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  min-width: 3px;
+}
+
+.ana-tt-ok {
+  background: var(--ana-ok);
+}
+
+.ana-tt-empty {
+  background: var(--ana-critical);
+}
+
+.ana-tt-camera {
+  background: var(--ana-warn);
+}
+
+.ana-tt-disarmed {
+  background: var(--ana-off);
+}
+
+.ana-tt-nocontact {
+  background: repeating-linear-gradient(135deg, var(--ana-track) 0 3px, var(--ana-off) 3px 6px);
+}
+
+.ana-tt-nodata {
+  background: var(--ana-track);
+}
+
+.ana-tt-legend {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px 16px;
+  margin: 10px 0 0;
+  padding: 0;
+  list-style: none;
+  font-size: 12px;
+  color: var(--muted);
+}
+
+.ana-tt-swatch {
+  display: inline-block;
+  width: 12px;
+  height: 12px;
+  margin-right: 6px;
+  border-radius: 3px;
+  vertical-align: -2px;
+}
+
+/* Headroom for the value label above the tallest bar. */
+.ana-bars {
+  padding-top: 20px;
+}
+
+.ana-bars-plot {
+  position: relative;
+  height: 120px;
+  margin-left: 28px;
+}
+
+.ana-bars-grid {
+  position: absolute;
+  left: 0;
+  right: 0;
+  height: 1px;
+  background: var(--border);
+}
+
+.ana-bars-grid span {
+  position: absolute;
+  left: -28px;
+  top: -7px;
+  width: 22px;
+  text-align: right;
+  font-size: 11px;
+  font-variant-numeric: tabular-nums;
+  color: var(--muted);
+}
+
+.ana-bars-cols {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: flex-end;
+  gap: 2px;
+}
+
+.ana-bars-col {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  align-items: center;
+  justify-content: flex-end;
+  min-width: 0;
+  height: 100%;
+}
+
+.ana-bars-bar {
+  width: 100%;
+  max-width: 24px;
+  border-radius: 4px 4px 0 0;
+  background: var(--muted);
+  transition: background 120ms ease;
+}
+
+.ana-bars-col:hover .ana-bars-bar {
+  background: var(--text);
+}
+
+.ana-bars-val {
+  margin-bottom: 4px;
+  font-size: 11px;
+  color: var(--muted);
+}
+
+.ana-bars-labels {
+  display: flex;
+  gap: 2px;
+  margin-left: 28px;
+  margin-top: 6px;
+  font-size: 11px;
+  color: var(--muted);
+}
+
+.ana-bars-labels span {
+  flex: 1;
+  min-width: 0;
+  text-align: center;
+  white-space: nowrap;
+}
+
+.ana-details {
+  margin-top: 8px;
+}
+
+.ana-details summary {
+  cursor: pointer;
+  font-size: 12px;
+  color: var(--muted);
+}
+
+.ana-table {
+  width: 100%;
+  max-width: 480px;
+  margin-top: 8px;
+  border-collapse: collapse;
+  font-size: 12px;
+}
+
+.ana-table th,
+.ana-table td {
+  padding: 4px 8px;
+  text-align: left;
+  border-bottom: 1px solid var(--border);
+}
+
+.ana-table th {
+  font-weight: 500;
+  color: var(--muted);
+}
+
+.ana-table th:nth-child(n + 2),
+.ana-table td:nth-child(n + 2) {
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+}
+
+.ana-story-filters {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-bottom: 10px;
+}
+
+.ana-story-filters button {
+  padding: 4px 10px;
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  background: transparent;
+  color: var(--muted);
+  font-size: 12px;
+}
+
+.ana-story-filters button:hover,
+.ana-story-filters button:focus-visible,
+.ana-story-filters button.active {
+  background: var(--hover);
+  color: var(--text);
+}
+
+.ana-story-filters span {
+  margin-left: 6px;
+  color: var(--muted);
+  font-variant-numeric: tabular-nums;
+}
+
+.ana-story-list {
+  display: flex;
+  flex-direction: column;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  font-size: 13px;
+}
+
+.ana-story-day {
+  padding: 12px 0 4px;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--muted);
+}
+
+.ana-story-day:first-child {
+  padding-top: 0;
+}
+
+.ana-story-item {
+  position: relative;
+  display: flex;
+  gap: 12px;
+  align-items: baseline;
+  padding: 7px 0 7px 16px;
+  border-bottom: 1px solid var(--border);
+}
+
+.ana-story-item::before {
+  content: "";
+  position: absolute;
+  left: 0;
+  top: 13px;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--ana-off);
+}
+
+.ana-story-warn::before {
+  background: var(--ana-warn);
+}
+
+.ana-story-critical::before {
+  background: var(--ana-critical);
+}
+
+.ana-story-when {
+  flex-shrink: 0;
+  min-width: 110px;
+  font-variant-numeric: tabular-nums;
+  color: var(--muted);
+  font-size: 12px;
+}
+
+.ana-story-detail {
+  color: var(--muted);
+}
+
+.ana-story-more {
+  padding: 8px 0 0 16px;
+  font-size: 12px;
+  color: var(--muted);
+}

@@ -1,5 +1,6 @@
 import type { ReactNode } from "react";
 import type { AppSettings, Resolution, ThemeName } from "../settings";
+import { AccountSettings } from "./AccountSettings";
 
 export type { ThemeName };
 
@@ -43,6 +44,7 @@ export function SettingsPanel({
           </Row>
         </div>
       </section>
+      <AccountSettings />
       <section className="settings-group">
         <h2>Appearance</h2>
         <div className="settings-card">

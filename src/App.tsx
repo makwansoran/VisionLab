@@ -4,6 +4,8 @@ import { SettingsPanel } from "./components/SettingsPanel";
 import { Sidebar, type SectionId } from "./components/Sidebar";
 import { HomeOverview } from "./components/HomeOverview";
 import { VisionPanel } from "./components/VisionPanel";
+import { AnalysePanel } from "./components/AnalysePanel";
+import { useAccount } from "./hooks/useAccount";
 import { useCameras } from "./hooks/useCameras";
 import { useDashboards } from "./hooks/useDashboards";
 import { useFeeds } from "./hooks/useFeeds";
@@ -45,6 +47,7 @@ export function App() {
   const { dashboards, create: createDashboard, rename: renameDashboard, remove: removeDashboard } = useDashboards();
   const { touch } = useProjects(write);
   const vision = useVisionPath(touch);
+  const { plan } = useAccount();
   const [onCanvas, setOnCanvas] = useState<string[]>([]);
   useEffect(() => {
     const match = feeds.find((feed) => feed.cameraId === connectedId);
@@ -80,6 +83,7 @@ export function App() {
         active={section}
         name={settings.displayName.trim() || "User"}
         image={settings.profileImage}
+        plan={plan?.name ?? null}
         onChange={(id) => {
           if (id === "vision") vision.visit({ view: "list" });
           setSection(id);
@@ -188,6 +192,8 @@ export function App() {
               });
             }}
           />
+        ) : section === "analyse" ? (
+          <AnalysePanel />
         ) : section === "notifications" ? (
           <main className="home" aria-label="Notifications">
             <header className="home-head">
