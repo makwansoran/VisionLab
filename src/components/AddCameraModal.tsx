@@ -1,6 +1,7 @@
 import { useEffect, useId, useRef, useState } from "react";
 import { openCamera } from "../hooks/useFeeds";
 import type { Resolution } from "../settings";
+import { TEST_CAMERA_ID, TEST_CAMERA_LABEL } from "../testCamera";
 
 type CameraSource = "device" | "network" | "file";
 type NetworkKind = "nvr" | "switch";
@@ -36,6 +37,9 @@ const sources: { id: CameraSource; label: string; detail: string }[] = [
   { id: "file", label: "Video file", detail: "A recording on this computer" },
 ];
 
+// Listed after the real cameras, and alone when there are none, so the flow can be tried on any machine.
+const testCamera = { id: TEST_CAMERA_ID, label: TEST_CAMERA_LABEL, detail: "A moving test picture, no camera needed" };
+
 const systems: Record<NetworkKind, string[]> = {
   nvr: ["Hikvision", "Dahua", "Uniview", "Reolink"],
   switch: ["Cisco", "UniFi", "Netgear", "TP-Link"],
@@ -45,10 +49,18 @@ export function AddCameraModal({
   onClose,
   onAddDevice,
   resolution,
+  purpose = "vision",
+  excludedDeviceIds = [],
+  excludedVideoFiles = [],
+  onAddVideo,
 }: {
   onClose: () => void;
   onAddDevice: (model: string, deviceId: string, name: string, stream: MediaStream) => void;
   resolution: Resolution;
+  purpose?: "vision" | "dashboard";
+  excludedDeviceIds?: string[];
+  excludedVideoFiles?: { name: string; size: number; lastModified: number }[];
+  onAddVideo?: (file: File) => void;
 }) {
   const titleId = useId();
   const dialogRef = useRef<HTMLDivElement>(null);
@@ -62,7 +74,7 @@ export function AddCameraModal({
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
   const [videoFile, setVideoFile] = useState<File | null>(null);
-  const [cameras, setCameras] = useState<{ id: string; label: string }[]>([]);
+  const [cameras, setCameras] = useState<{ id: string; label: string; detail?: string }[]>([]);
   const [cameraId, setCameraId] = useState<string | null>(null);
   const [cameraTry, setCameraTry] = useState(0);
   const [cameraState, setCameraState] = useState<"idle" | "loading" | "ready" | "error">("idle");
@@ -107,15 +119,15 @@ export function AddCameraModal({
           found = await read();
         }
         if (cancel) return;
-        const options = found.map((device, index) => ({ id: device.deviceId, label: device.label.trim() || `Camera ${index + 1}` }));
+        const options = [...found.map((device, index) => ({ id: device.deviceId, label: device.label.trim() || `Camera ${index + 1}` })), testCamera];
         setCameras(options);
         setCameraId((current) => (current && options.some((item) => item.id === current) ? current : null));
         setCameraState("ready");
-      } catch (caught) {
+      } catch {
         if (cancel) return;
-        setCameras([]);
-        setCameraState("error");
-        setCameraError(caught instanceof Error ? caught.message : "Could not read the cameras");
+        setCameras([testCamera]);
+        setCameraId(null);
+        setCameraState("ready");
       }
     })();
     return () => {
@@ -168,14 +180,14 @@ export function AddCameraModal({
     (step === 3 && source === "network" && system !== null);
   const heading =
     step === 1
-      ? "Add vision"
+      ? (purpose === "dashboard" ? "Add dashboard feed" : "Add vision")
       : source === "network" && step === 2
         ? "Network"
         : source === "network" && step === 3
           ? "System"
           : source === "network"
             ? (system ?? "Connection")
-            : (selected?.label ?? "Add vision");
+            : (selected?.label ?? (purpose === "dashboard" ? "Add dashboard feed" : "Add vision"));
 
   const takeVideo = (file: File | undefined) => {
     if (!file) return;
@@ -184,11 +196,20 @@ export function AddCameraModal({
       setFileNote("Choose a video file");
       return;
     }
+    if (purpose === "dashboard" && excludedVideoFiles.some((item) => item.name === file.name && item.size === file.size && item.lastModified === file.lastModified)) {
+      setFileNote("This video is already on the dashboard");
+      return;
+    }
     setFileNote(null);
     setVideoFile(file);
   };
 
   const finish = () => {
+    if (source === "file" && videoFile && purpose === "dashboard" && onAddVideo) {
+      onAddVideo(videoFile);
+      onClose();
+      return;
+    }
     if (source !== "device" || opening) return;
     const camera = cameras.find((item) => item.id === cameraId);
     if (!camera) return;
@@ -272,14 +293,17 @@ export function AddCameraModal({
                   type="button"
                   role="radio"
                   aria-checked={cameraId === item.id}
-                  className={cameraId === item.id ? "source-option selected" : "source-option"}
+                  aria-disabled={excludedDeviceIds.includes(item.id)}
+                  className={`${cameraId === item.id ? "source-option selected" : "source-option"}${excludedDeviceIds.includes(item.id) ? " is-disabled" : ""}`}
                   onClick={() => {
+                    if (excludedDeviceIds.includes(item.id)) return;
                     setCameraError(null);
                     setCameraId(item.id);
                     setCameraTry((current) => current + 1);
                   }}
                 >
                   <span>{item.label}</span>
+                  {item.detail && <span>{item.detail}</span>}
                 </button>
               ))}
             </div>
@@ -423,8 +447,8 @@ export function AddCameraModal({
               Continue
             </button>
           ) : (
-            <button type="button" className="start" disabled={source !== "device" || !cameraId || opening} onClick={finish}>
-              {source === "file" ? "Add Video File" : "Add vision"}
+            <button type="button" className="start" disabled={source === "file" ? !videoFile || purpose !== "dashboard" : source !== "device" || !cameraId || opening} onClick={finish}>
+              {source === "file" ? "Add Video File" : purpose === "dashboard" ? "Add feed" : "Add vision"}
             </button>
           )}
         </div>

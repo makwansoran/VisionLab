@@ -1,27 +1,48 @@
 import { useEffect, useRef, useState, type ReactNode } from "react";
+import { addFeedEvent } from "../feedEvents";
+import { HISTORY_KEEP_MS, pieceAt } from "../history";
 import type { Feed } from "../hooks/useFeeds";
-import { loadVision, visionStats, type VisionStats } from "../labels/db";
-import type { VisionRecord } from "../labels/types";
+import { useFeedEvents } from "../hooks/useFeedEvents";
+import { useFeedHistory } from "../hooks/useFeedHistory";
+import { isTestCamera, startTestCycle } from "../testCamera";
+import { timelineRange } from "../timeline";
+import { FeedSidebar } from "./FeedSidebar";
+import { FeedTimeline } from "./FeedTimeline";
 
 export function CameraCanvas({
   feeds,
   start,
   onCapture,
+  onTrain,
 }: {
   feeds: { feed: Feed; name: string }[];
   start: (id: string) => Promise<void>;
   onCapture: (cameraId: string, blob: Blob, width: number, height: number) => Promise<void>;
+  onTrain: () => void;
 }) {
   const feed = feeds[0];
+  const cameraId = feed?.feed.cameraId ?? null;
+  const deviceId = feed?.feed.deviceId ?? null;
+  const error = feed?.feed.error ?? null;
+  const status = feed?.feed.status ?? "idle";
+  const live = status === "live";
   const videoRef = useRef<HTMLVideoElement | null>(null);
+  const playbackRef = useRef<HTMLVideoElement | null>(null);
+  const lastStatus = useRef(status);
   const [video, setVideo] = useState<HTMLVideoElement | null>(null);
   const [paused, setPaused] = useState(true);
-  const live = feed?.feed.status === "live";
-  const fps = useFeedFps(video, live && !paused);
+  const [playbackPaused, setPlaybackPaused] = useState(false);
+  // Null while watching live. Otherwise the moment to replay, counted so a second seek to the same moment still lands.
+  const [seek, setSeek] = useState<{ time: number; n: number } | null>(null);
+  const [playhead, setPlayhead] = useState<number | null>(null);
+  const events = useFeedEvents(cameraId);
+  const { pieces, now } = useFeedHistory(feed?.feed.id ?? null, live ? feed.feed.stream : null);
+  const range = timelineRange(now, HISTORY_KEEP_MS);
+  const piece = seek ? pieceAt(pieces, seek.time) : null;
+  const fps = useFeedFps(video, live && !paused && seek === null);
 
   const capture = async () => {
     const video = videoRef.current;
-    const cameraId = feed?.feed.cameraId;
     if (!feed || !cameraId || !video || !video.videoWidth) return;
     const canvas = document.createElement("canvas");
     canvas.width = video.videoWidth;
@@ -32,6 +53,7 @@ export function CameraCanvas({
     const blob = await new Promise<Blob | null>((resolve) => canvas.toBlob(resolve, "image/jpeg", 0.92));
     if (!blob) return;
     await onCapture(cameraId, blob, canvas.width, canvas.height);
+    addFeedEvent(cameraId, "capture");
   };
 
   useEffect(() => {
@@ -46,7 +68,51 @@ export function CameraCanvas({
     };
   }, [video]);
 
+  // The feed's own troubles go into the log next to the silo events.
+  useEffect(() => {
+    const previous = lastStatus.current;
+    lastStatus.current = status;
+    if (!cameraId || previous === status) return;
+    if (status === "error") addFeedEvent(cameraId, "camera", error ? `The camera did not start: ${error}` : "The camera did not start");
+    else if (status === "live" && previous === "error") addFeedEvent(cameraId, "camera", "Camera back");
+  }, [cameraId, status, error]);
+
+  // The Testing camera acts out a silo cycle, so the tracker has something to show before Argus runs.
+  useEffect(() => {
+    if (!cameraId || !live || !isTestCamera(deviceId)) return;
+    return startTestCycle((step) => addFeedEvent(cameraId, step));
+  }, [cameraId, live, deviceId]);
+
+  useEffect(() => {
+    const element = playbackRef.current;
+    if (!seek || !piece || !element) return;
+    if (element.dataset.url !== piece.url) {
+      element.src = piece.url;
+      element.dataset.url = piece.url;
+    }
+    element.currentTime = Math.max(0, (seek.time - piece.from) / 1000);
+    void element.play();
+  }, [seek, piece]);
+
+  const seekTo = (time: number) => {
+    setSeek((current) => ({ time, n: (current?.n ?? 0) + 1 }));
+    setPlayhead(time);
+  };
+
+  const goLive = () => {
+    setSeek(null);
+    setPlayhead(null);
+    setPlaybackPaused(false);
+  };
+
   const togglePlayback = () => {
+    if (seek) {
+      const element = playbackRef.current;
+      if (!element) return;
+      if (element.paused) void element.play();
+      else element.pause();
+      return;
+    }
     if (!feed) return;
     if (!live || !video) {
       void start(feed.feed.id);
@@ -60,105 +126,59 @@ export function CameraCanvas({
     <main className="stage vision-canvas" aria-label="Canvas">
       {feed && <h1 className="canvas-name">{feed.name}</h1>}
       <div className="canvas-row">
-      {feed && (
-        <div className="canvas-feed-col">
-          <article className="feed-window is-fixed">
-            <div className="feed-window-body">
-              <FeedTile
-                feed={feed.feed}
-                onRetry={() => void start(feed.feed.id)}
-                bindVideo={(element) => {
-                  videoRef.current = element;
-                  setVideo(element);
-                }}
-              />
-            </div>
-            {fps !== null && <span className="canvas-fps">{fps} fps</span>}
-            <button type="button" className="canvas-capture" onClick={() => void capture()}>
-              Capture
-            </button>
-          </article>
-        </div>
-      )}
-      <VisionAnalytics cameraId={feed?.feed.cameraId ?? null} />
+        {feed && (
+          <div className="canvas-feed-col has-timeline">
+            <article className="feed-window is-fixed">
+              <div className="feed-window-body">
+                <FeedTile
+                  feed={feed.feed}
+                  onRetry={() => void start(feed.feed.id)}
+                  bindVideo={(element) => {
+                    videoRef.current = element;
+                    setVideo(element);
+                  }}
+                />
+                {seek &&
+                  (piece ? (
+                    <video
+                      ref={playbackRef}
+                      className="feed-playback"
+                      muted
+                      playsInline
+                      onPlay={() => setPlaybackPaused(false)}
+                      onPause={() => setPlaybackPaused(true)}
+                      onTimeUpdate={(event) => setPlayhead(piece.from + event.currentTarget.currentTime * 1000)}
+                      onEnded={() => {
+                        const next = pieces.find((item) => item.from >= piece.to);
+                        if (next) seekTo(next.from);
+                        else goLive();
+                      }}
+                    />
+                  ) : (
+                    <p className="feed-playback-note">Nothing recorded at this time</p>
+                  ))}
+              </div>
+              {fps !== null && <span className="canvas-fps">{fps} fps</span>}
+              <button type="button" className="canvas-capture" onClick={() => void capture()}>
+                Capture
+              </button>
+            </article>
+            <FeedTimeline
+              events={events}
+              pieces={pieces}
+              now={now}
+              range={range}
+              playhead={playhead}
+              paused={seek ? playbackPaused : paused}
+              onTogglePlay={togglePlayback}
+              onSeek={seekTo}
+              onLive={goLive}
+            />
+          </div>
+        )}
+        <FeedSidebar cameraId={cameraId} events={events} onTrain={onTrain} />
       </div>
-      {feed && (
-        <button type="button" className="canvas-player" aria-label={paused ? "Start" : "Pause"} onClick={togglePlayback}>
-          {paused ? <PlayIcon /> : <PauseIcon />}
-        </button>
-      )}
     </main>
-  );
-}
-
-function VisionAnalytics({ cameraId }: { cameraId: string | null }) {
-  const [vision, setVision] = useState<VisionRecord | null>(null);
-  const [stats, setStats] = useState<VisionStats>({ frames: 0, labeled: 0, marks: {} });
-
-  useEffect(() => {
-    if (!cameraId) return;
-    let live = true;
-    Promise.all([loadVision(cameraId), visionStats(cameraId)]).then(([record, next]) => {
-      if (!live) return;
-      setVision(record);
-      setStats(next);
-    });
-    return () => {
-      live = false;
-    };
-  }, [cameraId]);
-
-  return (
-    <aside className="canvas-analytics" aria-label="Analytics">
-      <section className="canvas-card">
-        <h2>Watching</h2>
-        <p>{vision?.scope.trim() || "Scope is not set yet."}</p>
-        {vision && vision.rules.length > 0 && (
-          <ul>
-            {vision.rules.map((rule) => (
-              <li key={rule.id}>
-                <span>
-                  {vision.classes.find((item) => item.id === rule.classId)?.name ?? "Removed class"} → {rule.action}
-                </span>
-              </li>
-            ))}
-          </ul>
-        )}
-      </section>
-      <section className="canvas-card">
-        <h2>Training</h2>
-        <p>
-          {stats.frames} frames · {stats.labeled} labeled
-        </p>
-        {vision && vision.classes.length > 0 && (
-          <ul>
-            {vision.classes.map((item) => (
-              <li key={item.id}>
-                <span>{item.name}</span>
-                <span>{stats.marks[item.id] ?? 0}</span>
-              </li>
-            ))}
-          </ul>
-        )}
-      </section>
-    </aside>
-  );
-}
-
-function PlayIcon() {
-  return (
-    <svg viewBox="0 0 24 24" aria-hidden="true">
-      <path d="M8 5.5v13l11-6.5-11-6.5Z" />
-    </svg>
-  );
-}
-
-function PauseIcon() {
-  return (
-    <svg viewBox="0 0 24 24" aria-hidden="true">
-      <path d="M7 5h3.5v14H7V5Z" />
-      <path d="M13.5 5H17v14h-3.5V5Z" />
-    </svg>
   );
 }
 
@@ -192,19 +212,24 @@ export function CameraFeed({
   start,
   remove,
   embedded = false,
+  allowPrimaryRemove = false,
+  dashboardLayout = false,
 }: {
   feeds: Feed[];
   start: (id: string) => Promise<void>;
   remove: (id: string) => void;
   embedded?: boolean;
+  allowPrimaryRemove?: boolean;
+  dashboardLayout?: boolean;
 }) {
   const [primary, ...rest] = feeds;
-  const className = [embedded ? "project-camera" : "stage", rest.length > 0 ? "multi" : ""].filter(Boolean).join(" ");
+  const dashboardCountClass = feeds.length > 9 ? "feed-count-many" : `feed-count-${feeds.length}`;
+  const className = [embedded ? "project-camera" : "stage", rest.length > 0 ? "multi" : "", dashboardLayout ? `dashboard-layout ${dashboardCountClass}` : ""].filter(Boolean).join(" ");
   const Tag = embedded ? "div" : "main";
 
   return (
     <Tag className={className} aria-label="Camera">
-      {primary && <FeedTile feed={primary} primary onRetry={() => void start(primary.id)} />}
+      {primary && <FeedTile feed={primary} primary onRetry={() => void start(primary.id)} onRemove={allowPrimaryRemove ? () => remove(primary.id) : undefined} />}
       {rest.length > 0 && (
         <div className="feed-rail">
           {rest.map((feed) => (
@@ -268,7 +293,7 @@ function fitTrainingFrame(video: HTMLVideoElement) {
   picture.style.aspectRatio = `${video.videoWidth} / ${video.videoHeight}`;
 }
 
-function FeedTile({
+export function FeedTile({
   feed,
   primary = false,
   onRetry,
@@ -283,22 +308,54 @@ function FeedTile({
 }) {
   const videoRef = useRef<HTMLVideoElement>(null);
   const bindRef = useRef(bindVideo);
+  const [paused, setPaused] = useState(false);
   const live = feed.status === "live";
   bindRef.current = bindVideo;
 
   useEffect(() => {
     const video = videoRef.current;
     if (!video) return;
+    video.removeAttribute("src");
     video.srcObject = feed.stream;
-    if (feed.stream) void video.play();
+    if (feed.videoUrl) video.src = feed.videoUrl;
+    if (feed.stream || feed.videoUrl) void video.play().catch(() => undefined);
+    const sync = () => setPaused(video.paused);
+    video.addEventListener("play", sync);
+    video.addEventListener("pause", sync);
+    sync();
     fitTrainingFrame(video);
     bindRef.current?.(video);
-    return () => bindRef.current?.(null);
-  }, [feed.stream]);
+    return () => {
+      video.removeEventListener("play", sync);
+      video.removeEventListener("pause", sync);
+      video.pause();
+      video.srcObject = null;
+      video.removeAttribute("src");
+      bindRef.current?.(null);
+    };
+  }, [feed.stream, feed.videoUrl]);
+
+  const togglePlayback = () => {
+    const video = videoRef.current;
+    if (!video || !live) return;
+    if (video.paused) void video.play().catch(() => undefined);
+    else video.pause();
+  };
 
   return (
     <section className={primary ? "feed primary" : "feed"}>
-      <video ref={videoRef} autoPlay playsInline muted onLoadedMetadata={(event) => fitTrainingFrame(event.currentTarget)} />
+      <video
+        ref={videoRef}
+        autoPlay
+        playsInline
+        muted
+        loop={Boolean(feed.videoUrl)}
+        onClick={togglePlayback}
+        onLoadedMetadata={(event) => fitTrainingFrame(event.currentTarget)}
+      />
+      {live && <button type="button" className="feed-play-toggle" aria-label={paused ? `Play ${feed.name}` : `Pause ${feed.name}`} title={paused ? "Play" : "Pause"} onClick={togglePlayback}>
+        {paused ? <PlayIcon /> : <PauseIcon />}
+      </button>}
       {onRemove && (
         <button type="button" className="feed-remove" aria-label="Remove feed" onClick={onRemove}>
           ×
@@ -323,4 +380,12 @@ function FeedTile({
       )}
     </section>
   );
+}
+
+function PlayIcon() {
+  return <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M8 5.5v13l11-6.5-11-6.5Z" /></svg>;
+}
+
+function PauseIcon() {
+  return <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M7 5h3.5v14H7zM13.5 5H17v14h-3.5z" /></svg>;
 }

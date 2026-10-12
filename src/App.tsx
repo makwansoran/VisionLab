@@ -1,12 +1,13 @@
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState, type CSSProperties } from "react";
 import type { Session } from "@supabase/supabase-js";
 import { AddCameraModal } from "./components/AddCameraModal";
 import { SettingsPanel } from "./components/SettingsPanel";
 import { LoginPage } from "./components/LoginPage";
-import { isAuthConfigured, subscribeToAuthChanges } from "./auth/authService";
+import { isAuthConfigured, signOut, subscribeToAuthChanges } from "./auth/authService";
 import { Sidebar, type SectionId } from "./components/Sidebar";
 import { HomeOverview } from "./components/HomeOverview";
 import { VisionPanel } from "./components/VisionPanel";
+import { FeedTile } from "./components/CameraFeed";
 import { AnalysePanel } from "./components/AnalysePanel";
 import { useAccount } from "./hooks/useAccount";
 import { useCameras } from "./hooks/useCameras";
@@ -14,6 +15,7 @@ import { useDashboards } from "./hooks/useDashboards";
 import { useFeeds } from "./hooks/useFeeds";
 import { useProjects } from "./hooks/useProjects";
 import { useVisionPath, type VisionPlace } from "./hooks/useVisionPath";
+import { loadDashboardVideo, removeDashboardVideo, saveDashboardVideo } from "./hooks/dashboardVideos";
 import { loadLastProject, loadSettings, saveLastProject, saveSettings, type AppSettings } from "./settings";
 
 function viewKey(section: SectionId, place: VisionPlace) {
@@ -30,6 +32,7 @@ export function App() {
   const [settings, setSettings] = useState<AppSettings>(loadSettings);
   const [authSession, setAuthSession] = useState<Session | null>(null);
   const [addingCamera, setAddingCamera] = useState(false);
+  const [addingDashboardCamera, setAddingDashboardCamera] = useState(false);
   const [connectedId, setConnectedId] = useState<string | null>(() => localStorage.getItem("visionlab-connected-camera"));
   const restored = useRef(false);
   const write = useCallback((text: string) => {
@@ -48,20 +51,44 @@ export function App() {
     document.documentElement.dataset.mirror = settings.mirrorPreview ? "on" : "off";
     saveSettings(settings);
   }, [settings]);
-  const { feeds, start, add, rename: renameFeed, remove } = useFeeds(write, {
+  const { feeds, start, add, addVideo, rename: renameFeed, remove } = useFeeds(write, {
     autoStart: settings.autoStart,
     resolution: settings.resolution,
   });
   const { cameras, create: createCamera, remove: removeCamera, rename: renameCamera, setModel: setCameraModel } = useCameras();
-  const { dashboards, create: createDashboard, rename: renameDashboard, remove: removeDashboard } = useDashboards();
+  const { dashboards, create: createDashboard, rename: renameDashboard, remove: removeDashboard, addFeed: addDashboardFeed, removeFeed: removeDashboardFeed } = useDashboards();
   const { touch } = useProjects(write);
   const vision = useVisionPath(touch);
   const { plan } = useAccount();
+  // Sign in comes first; without a Supabase project there is nothing to sign in to, so the profile opens Settings.
+  const profile = authSession || !isAuthConfigured ? "settings" : "login";
   const [onCanvas, setOnCanvas] = useState<string[]>([]);
   useEffect(() => {
     const match = feeds.find((feed) => feed.cameraId === connectedId);
     setOnCanvas(match ? [match.id] : []);
   }, [feeds, connectedId]);
+
+  const dashboardId = vision.place.view === "dashboard" ? vision.place.id : null;
+  const activeDashboard = dashboardId ? dashboards.find((item) => item.id === dashboardId) : undefined;
+  const restoringVideoIds = useRef(new Set<string>());
+  useEffect(() => {
+    if (!activeDashboard) return;
+    activeDashboard.cameraFeeds.forEach((cameraFeed) => {
+      if (feeds.some((feed) => feed.cameraId === cameraFeed.id)) return;
+      if (cameraFeed.kind === "video") {
+        if (restoringVideoIds.current.has(cameraFeed.id)) return;
+        restoringVideoIds.current.add(cameraFeed.id);
+        void loadDashboardVideo(cameraFeed.id).then((blob) => {
+          if (blob && !feeds.some((feed) => feed.cameraId === cameraFeed.id)) {
+            addVideo(cameraFeed.name, URL.createObjectURL(blob), cameraFeed.id);
+          }
+        }).catch(() => undefined).finally(() => restoringVideoIds.current.delete(cameraFeed.id));
+        return;
+      }
+      const id = add(cameraFeed.model, cameraFeed.deviceId, cameraFeed.name, undefined, cameraFeed.id);
+      if (!settings.autoStart) void start(id);
+    });
+  }, [activeDashboard, feeds, add, addVideo, settings.autoStart, start]);
 
   useEffect(() => {
     const id =
@@ -92,7 +119,8 @@ export function App() {
         active={section}
         name={authSession?.user.email || settings.displayName.trim() || "User"}
         image={settings.profileImage}
-        onProfileClick={() => setSection("login")}
+        onProfileClick={() => setSection(profile)}
+        profile={profile}
         plan={plan?.name ?? null}
         onChange={(id) => {
           if (id === "vision") vision.visit({ view: "list" });
@@ -159,8 +187,38 @@ export function App() {
             }}
           />
         ) : section === "vision" && vision.place.view === "dashboard" ? (
-          <main className="stage empty-panel dashboard-page" aria-label="Dashboard">
-            <h1>{dashboards.find((item) => vision.place.view === "dashboard" && item.id === vision.place.id)?.name ?? "Dashboard"}</h1>
+          <main className="stage dashboard-page" aria-label="Dashboard">
+            <header className="dashboard-head">
+              <h1>{activeDashboard?.name ?? "Dashboard"}</h1>
+              <button type="button" className="dashboard-add" aria-label="Add camera feed" title="Add camera feed" onClick={() => setAddingDashboardCamera(true)}>
+                <PlusIcon />
+              </button>
+            </header>
+            <div className="dashboard-feeds">
+              {(() => {
+                const dashboardFeeds = (activeDashboard?.cameraFeeds ?? []).flatMap((cameraFeed) => {
+                  const feed = feeds.find((item) => item.cameraId === cameraFeed.id);
+                  return feed ? [feed] : [];
+                });
+                const columns = dashboardFeeds.length > 1 ? Math.ceil(Math.sqrt(dashboardFeeds.length)) : 1;
+                const countClass = dashboardFeeds.length === 1 ? "single" : "multiple";
+                return <div className={`dashboard-feed-grid ${countClass}`} style={{ "--dashboard-columns": columns } as CSSProperties}>
+                  {dashboardFeeds.map((feed) => <FeedTile
+                    key={feed.id}
+                    feed={feed}
+                    onRetry={() => void start(feed.id)}
+                    onRemove={() => {
+                      if (feed?.cameraId && activeDashboard) {
+                        const cameraFeed = activeDashboard.cameraFeeds.find((item) => item.id === feed.cameraId);
+                        if (cameraFeed?.kind === "video") void removeDashboardVideo(cameraFeed.id);
+                        removeDashboardFeed(activeDashboard.id, feed.cameraId);
+                        remove(feed.id);
+                      }
+                    }}
+                  />)}
+                </div>;
+              })()}
+            </div>
           </main>
         ) : section === "vision" ? (
           <VisionPanel
@@ -214,7 +272,14 @@ export function App() {
             <p className="home-empty">You have no notifications.</p>
           </main>
         ) : (
-          <SettingsPanel settings={settings} onChange={updateSettings} />
+          <SettingsPanel
+            settings={settings}
+            onChange={updateSettings}
+            session={authSession}
+            onSignOut={() => {
+              void signOut().then(() => setSection("vision"));
+            }}
+          />
         )}
         </div>
       </div>
@@ -236,6 +301,44 @@ export function App() {
           resolution={settings.resolution}
         />
       )}
+      {addingDashboardCamera && activeDashboard && (
+        <AddCameraModal
+          purpose="dashboard"
+          excludedDeviceIds={activeDashboard.cameraFeeds.filter((cameraFeed) => cameraFeed.kind !== "video").map((cameraFeed) => cameraFeed.deviceId)}
+          excludedVideoFiles={activeDashboard.cameraFeeds.filter((cameraFeed) => cameraFeed.kind === "video").map((cameraFeed) => ({
+            name: cameraFeed.fileName ?? cameraFeed.name,
+            size: cameraFeed.fileSize ?? -1,
+            lastModified: cameraFeed.fileLastModified ?? -1,
+          }))}
+          onClose={() => setAddingDashboardCamera(false)}
+          resolution={settings.resolution}
+          onAddDevice={(model, deviceId, name, stream) => {
+            const cameraFeed = { id: crypto.randomUUID(), name, model, deviceId, kind: "camera" as const };
+            addDashboardFeed(activeDashboard.id, cameraFeed);
+            add(model, deviceId, name, stream, cameraFeed.id);
+          }}
+          onAddVideo={(file) => {
+            const cameraFeed = {
+              id: crypto.randomUUID(),
+              name: file.name,
+              model: "Video file",
+              deviceId: "",
+              kind: "video" as const,
+              fileName: file.name,
+              fileSize: file.size,
+              fileLastModified: file.lastModified,
+            };
+            void saveDashboardVideo(cameraFeed.id, file).then(() => {
+              addDashboardFeed(activeDashboard.id, cameraFeed);
+              addVideo(file.name, URL.createObjectURL(file), cameraFeed.id);
+            }).catch(() => window.alert("Could not save this video for the dashboard."));
+          }}
+        />
+      )}
     </div>
   );
+}
+
+function PlusIcon() {
+  return <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 5v14M5 12h14" /></svg>;
 }

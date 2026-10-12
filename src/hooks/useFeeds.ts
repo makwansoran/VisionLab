@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { resolutionSize, type Resolution } from "../settings";
+import { isTestCamera, openTestCamera } from "../testCamera";
 
 export type FeedStatus = "idle" | "starting" | "live" | "error";
 
@@ -12,6 +13,7 @@ export interface Feed {
   status: FeedStatus;
   error: string | null;
   stream: MediaStream | null;
+  videoUrl?: string;
 }
 
 function createId() {
@@ -23,6 +25,7 @@ function blankFeed(model: string, deviceId: string | null, name: string): Feed {
 }
 
 export async function openCamera(deviceId?: string, resolution: Resolution = "720") {
+  if (isTestCamera(deviceId)) return openTestCamera(resolutionSize(resolution));
   if (!navigator.mediaDevices?.getUserMedia) {
     throw new Error("This window cannot open a camera.");
   }
@@ -158,6 +161,19 @@ export function useFeeds(
     return feed.id;
   }, [commit, start]);
 
+  const addVideo = useCallback((name: string, videoUrl: string, cameraId: string) => {
+    const feed: Feed = {
+      ...blankFeed("Video file", null, name),
+      cameraId,
+      status: "live",
+      stream: null,
+      videoUrl,
+    };
+    log("Video feed added");
+    commit([...feedsRef.current, feed]);
+    return feed.id;
+  }, [commit]);
+
   const setModel = useCallback((id: string, model: string) => {
     commit(feedsRef.current.map((feed) => (feed.id === id ? { ...feed, model } : feed)));
   }, [commit]);
@@ -173,6 +189,7 @@ export function useFeeds(
       const feed = feedsRef.current.find((item) => item.id === id);
       if (!feed) return;
       stopStream(feed.stream);
+      if (feed.videoUrl) URL.revokeObjectURL(feed.videoUrl);
       log("Feed removed");
       commit(feedsRef.current.filter((item) => item.id !== id));
     },
@@ -183,9 +200,12 @@ export function useFeeds(
     aliveRef.current = true;
     return () => {
       aliveRef.current = false;
-      feedsRef.current.forEach((feed) => stopStream(feed.stream));
+      feedsRef.current.forEach((feed) => {
+        stopStream(feed.stream);
+        if (feed.videoUrl) URL.revokeObjectURL(feed.videoUrl);
+      });
     };
   }, []);
 
-  return { feeds, start, add, setModel, rename, remove };
+  return { feeds, start, add, addVideo, setModel, rename, remove };
 }
