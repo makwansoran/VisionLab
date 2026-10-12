@@ -1,6 +1,7 @@
 import { useEffect, useId, useRef, useState } from "react";
 import { openCamera } from "../hooks/useFeeds";
 import type { Resolution } from "../settings";
+import { TEST_CAMERA_ID, TEST_CAMERA_LABEL } from "../testCamera";
 
 type CameraSource = "device" | "network" | "file";
 type NetworkKind = "nvr" | "switch";
@@ -36,6 +37,9 @@ const sources: { id: CameraSource; label: string; detail: string }[] = [
   { id: "file", label: "Video file", detail: "A recording on this computer" },
 ];
 
+// Listed after the real cameras, and alone when there are none, so the flow can be tried on any machine.
+const testCamera = { id: TEST_CAMERA_ID, label: TEST_CAMERA_LABEL, detail: "A moving test picture, no camera needed" };
+
 const systems: Record<NetworkKind, string[]> = {
   nvr: ["Hikvision", "Dahua", "Uniview", "Reolink"],
   switch: ["Cisco", "UniFi", "Netgear", "TP-Link"],
@@ -70,7 +74,7 @@ export function AddCameraModal({
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
   const [videoFile, setVideoFile] = useState<File | null>(null);
-  const [cameras, setCameras] = useState<{ id: string; label: string }[]>([]);
+  const [cameras, setCameras] = useState<{ id: string; label: string; detail?: string }[]>([]);
   const [cameraId, setCameraId] = useState<string | null>(null);
   const [cameraTry, setCameraTry] = useState(0);
   const [cameraState, setCameraState] = useState<"idle" | "loading" | "ready" | "error">("idle");
@@ -115,15 +119,15 @@ export function AddCameraModal({
           found = await read();
         }
         if (cancel) return;
-        const options = found.map((device, index) => ({ id: device.deviceId, label: device.label.trim() || `Camera ${index + 1}` }));
+        const options = [...found.map((device, index) => ({ id: device.deviceId, label: device.label.trim() || `Camera ${index + 1}` })), testCamera];
         setCameras(options);
         setCameraId((current) => (current && options.some((item) => item.id === current) ? current : null));
         setCameraState("ready");
-      } catch (caught) {
+      } catch {
         if (cancel) return;
-        setCameras([]);
-        setCameraState("error");
-        setCameraError(caught instanceof Error ? caught.message : "Could not read the cameras");
+        setCameras([testCamera]);
+        setCameraId(null);
+        setCameraState("ready");
       }
     })();
     return () => {
@@ -299,6 +303,7 @@ export function AddCameraModal({
                   }}
                 >
                   <span>{item.label}</span>
+                  {item.detail && <span>{item.detail}</span>}
                 </button>
               ))}
             </div>

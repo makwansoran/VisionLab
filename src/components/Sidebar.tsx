@@ -14,6 +14,7 @@ export function Sidebar({
   name,
   image,
   onProfileClick,
+  profile,
   plan,
 }: {
   active: SectionId;
@@ -21,6 +22,7 @@ export function Sidebar({
   name: string;
   image: string;
   onProfileClick: () => void;
+  profile: "settings" | "login";
   plan: string | null;
 }) {
   return (
@@ -52,20 +54,10 @@ export function Sidebar({
       </nav>
       <button
         type="button"
-        className={active === "settings" ? "nav-item active" : "nav-item"}
-        aria-pressed={active === "settings"}
-        title="Settings"
-        onClick={() => onChange("settings")}
-      >
-        <IconSettings />
-        <span>Settings</span>
-      </button>
-      <button
-        type="button"
-        className="user-area"
-        title={`Sign in as ${name}`}
+        className={active === "settings" || active === "login" ? "user-area active" : "user-area"}
+        aria-pressed={active === "settings" || active === "login"}
+        title={profile === "settings" ? "Settings" : "Sign in"}
         onClick={onProfileClick}
-        aria-label="Open sign in page"
       >
         <img src={image || "/profile.svg"} alt="" />
         <span>{name}</span>
@@ -104,11 +96,3 @@ function IconBell() {
   );
 }
 
-function IconSettings() {
-  return (
-    <svg viewBox="0 0 24 24" aria-hidden="true">
-      <circle cx="12" cy="12" r="3" />
-      <path d="M19.4 15a1.7 1.7 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.8-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1.1-1.5 1.7 1.7 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.8 1.7 1.7 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1a1.7 1.7 0 0 0 1.5-1.1 1.7 1.7 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.8.3H9a1.7 1.7 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.8V9a1.7 1.7 0 0 0 1.5 1H21a2 2 0 0 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1Z" />
-    </svg>
-  );
-}

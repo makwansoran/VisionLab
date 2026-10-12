@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { resolutionSize, type Resolution } from "../settings";
+import { isTestCamera, openTestCamera } from "../testCamera";
 
 export type FeedStatus = "idle" | "starting" | "live" | "error";
 
@@ -24,6 +25,7 @@ function blankFeed(model: string, deviceId: string | null, name: string): Feed {
 }
 
 export async function openCamera(deviceId?: string, resolution: Resolution = "720") {
+  if (isTestCamera(deviceId)) return openTestCamera(resolutionSize(resolution));
   if (!navigator.mediaDevices?.getUserMedia) {
     throw new Error("This window cannot open a camera.");
   }

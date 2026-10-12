@@ -3545,8 +3545,8 @@ button {
 }
 
 .ios-toggle {
-  width: 51px;
-  height: 31px;
+  width: 36px;
+  height: 20px;
   display: flex;
   align-items: center;
   padding: 2px;
@@ -3565,8 +3565,8 @@ button {
 }
 
 .ios-toggle span {
-  width: 27px;
-  height: 27px;
+  width: 16px;
+  height: 16px;
   border-radius: 50%;
   background: #fff;
   box-shadow: 0 2px 4px rgba(0, 0, 0, 0.25);
@@ -3575,7 +3575,7 @@ button {
 }
 
 .ios-toggle.on span {
-  transform: translateX(20px);
+  transform: translateX(16px);
 }
 
 .ios-toggle:focus-visible {
@@ -3630,7 +3630,7 @@ button {
   background: var(--hover);
 }
 
-/* The user area is a button that opens Settings, where Plan and Usage live, and shows the plan while the sidebar is open. */
+/* The user area is the one way in: sign in first, Settings once signed in, with the plan shown while the sidebar is open. */
 
 .user-area {
   padding: 0;
@@ -3640,7 +3640,8 @@ button {
 }
 
 .user-area:hover,
-.user-area:focus-visible {
+.user-area:focus-visible,
+.user-area.active {
   background: var(--hover);
 }
 
@@ -4406,4 +4407,337 @@ button {
   padding: 8px 0 0 16px;
   font-size: 12px;
   color: var(--muted);
+}
+
+/* The feed's own instruments: play and pause, a tracker to go back in time, a line of what happened, and the sidebar. */
+
+/* The row is the measure: the feed column is exactly as wide as a 16:9 picture that fits beside
+   a sidebar, and the sidebar takes the rest, so neither leaves a gap however the window is shaped. */
+.canvas-row:has(.has-timeline) {
+  container-type: size;
+}
+
+.canvas-feed-col.has-timeline {
+  flex: 0 0 min(calc(100cqw - 284px), calc((100cqh - 190px) * 16 / 9));
+  width: auto;
+  container-type: normal;
+}
+
+.canvas-feed-col.has-timeline .feed-window.is-fixed {
+  width: 100%;
+}
+
+.canvas-row:has(.has-timeline) .canvas-analytics {
+  flex: 1 1 280px;
+  width: auto;
+}
+
+.feed-playback,
+.feed-playback-note {
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  width: 100%;
+  height: 100%;
+  background: var(--inset);
+}
+
+.feed-playback {
+  object-fit: cover;
+}
+
+.feed-playback-note {
+  display: grid;
+  place-items: center;
+  margin: 0;
+  color: var(--muted);
+  font-size: 13px;
+}
+
+.timeline {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  width: 100%;
+  height: 182px;
+  padding: 0 4px;
+}
+
+.timeline-controls {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  height: 40px;
+}
+
+.timeline-play {
+  width: 40px;
+  height: 40px;
+  display: grid;
+  place-items: center;
+  padding: 0;
+  border: 0;
+  border-radius: 999px;
+  background: transparent;
+  color: var(--text);
+}
+
+.timeline-play svg {
+  width: 18px;
+  height: 18px;
+  fill: currentColor;
+}
+
+.timeline-live {
+  height: 28px;
+  padding: 0 12px;
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  background: transparent;
+  color: var(--muted);
+  font-size: 12px;
+}
+
+.timeline-play:hover,
+.timeline-play:focus-visible,
+.timeline-live:hover,
+.timeline-live:focus-visible,
+.timeline-live.active {
+  background: var(--hover);
+  color: var(--text);
+}
+
+.timeline-clock {
+  position: absolute;
+  right: 0;
+  color: var(--muted);
+  font-size: 12px;
+  font-variant-numeric: tabular-nums;
+}
+
+.timeline-track {
+  position: relative;
+  height: 18px;
+  overflow: hidden;
+  border-radius: 4px;
+  background: var(--border);
+  cursor: pointer;
+  touch-action: none;
+}
+
+.timeline-track:focus-visible {
+  outline: 2px solid var(--muted);
+  outline-offset: 2px;
+}
+
+.timeline-recorded {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  background: color-mix(in srgb, var(--muted) 45%, var(--side));
+}
+
+.timeline-mark {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  width: 3px;
+  margin-left: -1px;
+}
+
+.timeline-playhead {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  width: 2px;
+  margin-left: -1px;
+  background: var(--text);
+}
+
+.timeline-axis {
+  display: flex;
+  justify-content: space-between;
+  color: var(--muted);
+  font-size: 11px;
+  font-variant-numeric: tabular-nums;
+}
+
+.timeline-graph {
+  position: relative;
+  height: 56px;
+  overflow: hidden;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  background: color-mix(in srgb, var(--side) 70%, var(--bg));
+}
+
+.timeline-graph svg {
+  display: block;
+  width: 100%;
+  height: 100%;
+}
+
+.timeline-graph line,
+.timeline-graph path {
+  fill: none;
+  vector-effect: non-scaling-stroke;
+}
+
+.timeline-grid {
+  stroke: var(--border);
+  stroke-width: 1;
+  stroke-dasharray: 3 5;
+}
+
+.timeline-base {
+  stroke: var(--muted);
+  stroke-width: 1;
+  opacity: 0.6;
+}
+
+.timeline-spike {
+  stroke-width: 1.6;
+  stroke-linejoin: round;
+}
+
+.timeline-spike-fill {
+  stroke: none;
+}
+
+.timeline-graph-playhead {
+  stroke: var(--text);
+  stroke-width: 1;
+  opacity: 0.45;
+}
+
+.timeline-legend {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px 12px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  color: var(--muted);
+  font-size: 11px;
+}
+
+.timeline-legend i {
+  display: inline-block;
+  width: 8px;
+  height: 8px;
+  margin-right: 5px;
+  border-radius: 50%;
+}
+
+.canvas-fold {
+  display: block;
+}
+
+.canvas-fold > summary {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  cursor: pointer;
+}
+
+.canvas-fold > summary span {
+  color: var(--muted);
+  font-size: 12px;
+  font-variant-numeric: tabular-nums;
+}
+
+.canvas-fold > summary svg {
+  width: 16px;
+  height: 16px;
+  margin-left: auto;
+  flex: none;
+  fill: none;
+  stroke: var(--muted);
+  stroke-width: 1.7;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  transition: transform 160ms ease;
+}
+
+.canvas-fold[open] > summary svg {
+  transform: rotate(90deg);
+}
+
+.canvas-fold > summary:hover svg,
+.canvas-fold > summary:focus-visible svg {
+  stroke: var(--text);
+}
+
+.canvas-fold > summary:focus-visible {
+  outline: 2px solid var(--muted);
+  outline-offset: 2px;
+  border-radius: 6px;
+}
+
+.canvas-fold-body {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-top: 8px;
+}
+
+.canvas-fold-body .text-btn {
+  align-self: flex-start;
+  height: 24px;
+  padding: 0 8px;
+  font-size: 12px;
+}
+
+.canvas-card .feed-side-list li {
+  justify-content: flex-start;
+  align-items: baseline;
+  gap: 8px;
+  font-size: 13px;
+}
+
+.feed-dot {
+  flex: none;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  align-self: center;
+}
+
+.feed-side-time {
+  margin-left: auto;
+  color: var(--muted);
+  font-size: 12px;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+
+.feed-side-train {
+  align-self: flex-start;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  height: 32px;
+  padding: 0 12px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: transparent;
+  color: var(--text);
+  font-size: 13px;
+}
+
+.feed-side-train:hover,
+.feed-side-train:focus-visible {
+  background: var(--hover);
+}
+
+.feed-side-train svg {
+  width: 16px;
+  height: 16px;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1.7;
+  stroke-linecap: round;
+  stroke-linejoin: round;
 }
