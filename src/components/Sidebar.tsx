@@ -1,9 +1,10 @@
 import type { ReactElement } from "react";
 
-export type SectionId = "vision" | "notifications" | "settings" | "login";
+export type SectionId = "vision" | "analyse" | "notifications" | "settings" | "login";
 
 const items: { id: SectionId; label: string; icon: () => ReactElement }[] = [
   { id: "vision", label: "Home", icon: IconHome },
+  { id: "analyse", label: "Analyse", icon: IconChart },
   { id: "notifications", label: "Notifications", icon: IconBell },
 ];
 
@@ -13,12 +14,14 @@ export function Sidebar({
   name,
   image,
   onProfileClick,
+  plan,
 }: {
   active: SectionId;
   onChange: (id: SectionId) => void;
   name: string;
   image: string;
   onProfileClick: () => void;
+  plan: string | null;
 }) {
   return (
     <aside className="sidebar">
@@ -57,9 +60,16 @@ export function Sidebar({
         <IconSettings />
         <span>Settings</span>
       </button>
-      <button type="button" className="user-area" title={`Sign in as ${name}`} onClick={onProfileClick} aria-label="Open sign in page">
+      <button
+        type="button"
+        className="user-area"
+        title={`Sign in as ${name}`}
+        onClick={onProfileClick}
+        aria-label="Open sign in page"
+      >
         <img src={image || "/profile.svg"} alt="" />
         <span>{name}</span>
+        {plan && <span className="account-badge">{plan}</span>}
       </button>
     </aside>
   );
@@ -70,6 +80,17 @@ function IconHome() {
     <svg viewBox="0 0 24 24" aria-hidden="true">
       <path d="M4 11 12 4l8 7" />
       <path d="M6 10v9h12v-9" />
+    </svg>
+  );
+}
+
+function IconChart() {
+  return (
+    <svg viewBox="0 0 24 24" aria-hidden="true">
+      <path d="M4 19.5h16" />
+      <path d="M7 16.5v-5" />
+      <path d="M12 16.5V6.5" />
+      <path d="M17 16.5v-3" />
     </svg>
   );
 }

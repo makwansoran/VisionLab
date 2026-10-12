@@ -8,7 +8,8 @@
     "dev": "concurrently -k -n vite,app -c cyan,green \"vite --port 5173 --strictPort\" \"wait-on http://127.0.0.1:5173 && cross-env VITE_DEV_SERVER_URL=http://127.0.0.1:5173 electron . --no-sandbox\"",
     "start": "electron . --no-sandbox",
     "build": "vite build",
-    "typecheck": "tsc --noEmit"
+    "typecheck": "tsc --noEmit",
+    "test": "vitest run"
   },
   "dependencies": {
     "@supabase/supabase-js": "^2.117.3",
@@ -24,6 +25,7 @@
     "electron": "^38.2.0",
     "typescript": "^5.9.0",
     "vite": "^7.1.0",
+    "vitest": "^4.1.11",
     "wait-on": "^8.0.4"
   }
 }

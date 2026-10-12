@@ -7,6 +7,8 @@ import { isAuthConfigured, subscribeToAuthChanges } from "./auth/authService";
 import { Sidebar, type SectionId } from "./components/Sidebar";
 import { HomeOverview } from "./components/HomeOverview";
 import { VisionPanel } from "./components/VisionPanel";
+import { AnalysePanel } from "./components/AnalysePanel";
+import { useAccount } from "./hooks/useAccount";
 import { useCameras } from "./hooks/useCameras";
 import { useDashboards } from "./hooks/useDashboards";
 import { useFeeds } from "./hooks/useFeeds";
@@ -54,6 +56,7 @@ export function App() {
   const { dashboards, create: createDashboard, rename: renameDashboard, remove: removeDashboard } = useDashboards();
   const { touch } = useProjects(write);
   const vision = useVisionPath(touch);
+  const { plan } = useAccount();
   const [onCanvas, setOnCanvas] = useState<string[]>([]);
   useEffect(() => {
     const match = feeds.find((feed) => feed.cameraId === connectedId);
@@ -90,6 +93,7 @@ export function App() {
         name={authSession?.user.email || settings.displayName.trim() || "User"}
         image={settings.profileImage}
         onProfileClick={() => setSection("login")}
+        plan={plan?.name ?? null}
         onChange={(id) => {
           if (id === "vision") vision.visit({ view: "list" });
           setSection(id);
@@ -200,6 +204,8 @@ export function App() {
           />
         ) : section === "login" ? (
           <LoginPage session={authSession} onSignedIn={() => setSection("vision")} />
+        ) : section === "analyse" ? (
+          <AnalysePanel />
         ) : section === "notifications" ? (
           <main className="home" aria-label="Notifications">
             <header className="home-head">
