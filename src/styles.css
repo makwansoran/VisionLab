@@ -308,6 +308,139 @@ button {
   font-weight: 500;
 }
 
+.dashboard-page {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  overflow: auto;
+}
+
+.dashboard-head {
+  flex: none;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  min-height: 36px;
+}
+
+.dashboard-add {
+  width: 34px;
+  height: 34px;
+  display: grid;
+  place-items: center;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: var(--side);
+  color: var(--text);
+}
+
+.dashboard-add:hover,
+.dashboard-add:focus-visible {
+  background: var(--hover);
+}
+
+.dashboard-add svg {
+  width: 18px;
+  height: 18px;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1.8;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.dashboard-feeds {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  align-items: flex-start;
+  overflow: auto;
+}
+
+.dashboard-feed-grid {
+  flex: none;
+  width: 100%;
+  height: auto;
+  min-width: 0;
+  min-height: 0;
+  display: grid;
+  grid-template-columns: repeat(var(--dashboard-columns), minmax(0, 1fr));
+  grid-auto-rows: auto;
+  align-content: start;
+  justify-items: stretch;
+  gap: 12px;
+}
+
+.dashboard-feed-grid.single {
+  max-width: min(100%, 1000px);
+  margin-inline: auto;
+}
+
+.dashboard-feed-grid .feed {
+  position: relative;
+  width: 100%;
+  height: auto;
+  aspect-ratio: 16 / 9;
+  min-width: 0;
+  min-height: 0;
+  flex: none;
+  border: 0;
+  border-radius: 0;
+  background: none;
+  outline: 0;
+}
+
+.dashboard-feed-grid .feed video {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover !important;
+  cursor: pointer;
+  border: 0;
+  outline: 0;
+  background: transparent;
+}
+
+.dashboard-feed-grid .feed-remove {
+  top: 8px;
+  right: 8px;
+}
+
+.dashboard-feed-grid .feed-play-toggle {
+  position: absolute;
+  right: 12px;
+  bottom: 12px;
+  z-index: 2;
+  width: 36px;
+  height: 36px;
+  display: grid;
+  place-items: center;
+  padding: 9px;
+  border: 1px solid rgba(255, 255, 255, 0.25);
+  border-radius: 50%;
+  background: rgba(0, 0, 0, 0.58);
+  color: white;
+}
+
+.dashboard-feed-grid .feed-play-toggle:hover,
+.dashboard-feed-grid .feed-play-toggle:focus-visible {
+  background: rgba(0, 0, 0, 0.82);
+}
+
+.dashboard-feed-grid .feed-play-toggle svg {
+  width: 100%;
+  height: 100%;
+  fill: currentColor;
+  stroke: currentColor;
+  stroke-width: 1.5;
+  stroke-linejoin: round;
+}
+
+.dashboard-empty {
+  padding: 24px 0;
+}
+
 .home-project {
   flex: 1;
   min-width: 0;
@@ -3059,6 +3192,11 @@ button {
 .source-option.selected {
   border-color: var(--muted);
   background: var(--hover);
+}
+
+.source-option.is-disabled {
+  cursor: not-allowed;
+  opacity: 0.5;
 }
 
 .source-option.selected {

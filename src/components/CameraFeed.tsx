@@ -192,19 +192,24 @@ export function CameraFeed({
   start,
   remove,
   embedded = false,
+  allowPrimaryRemove = false,
+  dashboardLayout = false,
 }: {
   feeds: Feed[];
   start: (id: string) => Promise<void>;
   remove: (id: string) => void;
   embedded?: boolean;
+  allowPrimaryRemove?: boolean;
+  dashboardLayout?: boolean;
 }) {
   const [primary, ...rest] = feeds;
-  const className = [embedded ? "project-camera" : "stage", rest.length > 0 ? "multi" : ""].filter(Boolean).join(" ");
+  const dashboardCountClass = feeds.length > 9 ? "feed-count-many" : `feed-count-${feeds.length}`;
+  const className = [embedded ? "project-camera" : "stage", rest.length > 0 ? "multi" : "", dashboardLayout ? `dashboard-layout ${dashboardCountClass}` : ""].filter(Boolean).join(" ");
   const Tag = embedded ? "div" : "main";
 
   return (
     <Tag className={className} aria-label="Camera">
-      {primary && <FeedTile feed={primary} primary onRetry={() => void start(primary.id)} />}
+      {primary && <FeedTile feed={primary} primary onRetry={() => void start(primary.id)} onRemove={allowPrimaryRemove ? () => remove(primary.id) : undefined} />}
       {rest.length > 0 && (
         <div className="feed-rail">
           {rest.map((feed) => (
@@ -268,7 +273,7 @@ function fitTrainingFrame(video: HTMLVideoElement) {
   picture.style.aspectRatio = `${video.videoWidth} / ${video.videoHeight}`;
 }
 
-function FeedTile({
+export function FeedTile({
   feed,
   primary = false,
   onRetry,
@@ -283,22 +288,54 @@ function FeedTile({
 }) {
   const videoRef = useRef<HTMLVideoElement>(null);
   const bindRef = useRef(bindVideo);
+  const [paused, setPaused] = useState(false);
   const live = feed.status === "live";
   bindRef.current = bindVideo;
 
   useEffect(() => {
     const video = videoRef.current;
     if (!video) return;
+    video.removeAttribute("src");
     video.srcObject = feed.stream;
-    if (feed.stream) void video.play();
+    if (feed.videoUrl) video.src = feed.videoUrl;
+    if (feed.stream || feed.videoUrl) void video.play();
+    const sync = () => setPaused(video.paused);
+    video.addEventListener("play", sync);
+    video.addEventListener("pause", sync);
+    sync();
     fitTrainingFrame(video);
     bindRef.current?.(video);
-    return () => bindRef.current?.(null);
-  }, [feed.stream]);
+    return () => {
+      video.removeEventListener("play", sync);
+      video.removeEventListener("pause", sync);
+      video.pause();
+      video.srcObject = null;
+      video.removeAttribute("src");
+      bindRef.current?.(null);
+    };
+  }, [feed.stream, feed.videoUrl]);
+
+  const togglePlayback = () => {
+    const video = videoRef.current;
+    if (!video || !live) return;
+    if (video.paused) void video.play().catch(() => undefined);
+    else video.pause();
+  };
 
   return (
     <section className={primary ? "feed primary" : "feed"}>
-      <video ref={videoRef} autoPlay playsInline muted onLoadedMetadata={(event) => fitTrainingFrame(event.currentTarget)} />
+      <video
+        ref={videoRef}
+        autoPlay
+        playsInline
+        muted
+        loop={Boolean(feed.videoUrl)}
+        onClick={togglePlayback}
+        onLoadedMetadata={(event) => fitTrainingFrame(event.currentTarget)}
+      />
+      {live && <button type="button" className="feed-play-toggle" aria-label={paused ? `Play ${feed.name}` : `Pause ${feed.name}`} title={paused ? "Play" : "Pause"} onClick={togglePlayback}>
+        {paused ? <PlayIcon /> : <PauseIcon />}
+      </button>}
       {onRemove && (
         <button type="button" className="feed-remove" aria-label="Remove feed" onClick={onRemove}>
           ×

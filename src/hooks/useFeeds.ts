@@ -12,6 +12,7 @@ export interface Feed {
   status: FeedStatus;
   error: string | null;
   stream: MediaStream | null;
+  videoUrl?: string;
 }
 
 function createId() {
@@ -158,6 +159,19 @@ export function useFeeds(
     return feed.id;
   }, [commit, start]);
 
+  const addVideo = useCallback((name: string, videoUrl: string, cameraId: string) => {
+    const feed: Feed = {
+      ...blankFeed("Video file", null, name),
+      cameraId,
+      status: "live",
+      stream: null,
+      videoUrl,
+    };
+    log("Video feed added");
+    commit([...feedsRef.current, feed]);
+    return feed.id;
+  }, [commit]);
+
   const setModel = useCallback((id: string, model: string) => {
     commit(feedsRef.current.map((feed) => (feed.id === id ? { ...feed, model } : feed)));
   }, [commit]);
@@ -173,6 +187,7 @@ export function useFeeds(
       const feed = feedsRef.current.find((item) => item.id === id);
       if (!feed) return;
       stopStream(feed.stream);
+      if (feed.videoUrl) URL.revokeObjectURL(feed.videoUrl);
       log("Feed removed");
       commit(feedsRef.current.filter((item) => item.id !== id));
     },
@@ -183,9 +198,12 @@ export function useFeeds(
     aliveRef.current = true;
     return () => {
       aliveRef.current = false;
-      feedsRef.current.forEach((feed) => stopStream(feed.stream));
+      feedsRef.current.forEach((feed) => {
+        stopStream(feed.stream);
+        if (feed.videoUrl) URL.revokeObjectURL(feed.videoUrl);
+      });
     };
   }, []);
 
-  return { feeds, start, add, setModel, rename, remove };
+  return { feeds, start, add, addVideo, setModel, rename, remove };
 }

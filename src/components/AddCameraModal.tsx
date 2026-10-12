@@ -45,10 +45,18 @@ export function AddCameraModal({
   onClose,
   onAddDevice,
   resolution,
+  purpose = "vision",
+  excludedDeviceIds = [],
+  excludedVideoFiles = [],
+  onAddVideo,
 }: {
   onClose: () => void;
   onAddDevice: (model: string, deviceId: string, name: string, stream: MediaStream) => void;
   resolution: Resolution;
+  purpose?: "vision" | "dashboard";
+  excludedDeviceIds?: string[];
+  excludedVideoFiles?: { name: string; size: number; lastModified: number }[];
+  onAddVideo?: (file: File) => void;
 }) {
   const titleId = useId();
   const dialogRef = useRef<HTMLDivElement>(null);
@@ -168,14 +176,14 @@ export function AddCameraModal({
     (step === 3 && source === "network" && system !== null);
   const heading =
     step === 1
-      ? "Add vision"
+      ? (purpose === "dashboard" ? "Add dashboard feed" : "Add vision")
       : source === "network" && step === 2
         ? "Network"
         : source === "network" && step === 3
           ? "System"
           : source === "network"
             ? (system ?? "Connection")
-            : (selected?.label ?? "Add vision");
+            : (selected?.label ?? (purpose === "dashboard" ? "Add dashboard feed" : "Add vision"));
 
   const takeVideo = (file: File | undefined) => {
     if (!file) return;
@@ -184,11 +192,20 @@ export function AddCameraModal({
       setFileNote("Choose a video file");
       return;
     }
+    if (purpose === "dashboard" && excludedVideoFiles.some((item) => item.name === file.name && item.size === file.size && item.lastModified === file.lastModified)) {
+      setFileNote("This video is already on the dashboard");
+      return;
+    }
     setFileNote(null);
     setVideoFile(file);
   };
 
   const finish = () => {
+    if (source === "file" && videoFile && purpose === "dashboard" && onAddVideo) {
+      onAddVideo(videoFile);
+      onClose();
+      return;
+    }
     if (source !== "device" || opening) return;
     const camera = cameras.find((item) => item.id === cameraId);
     if (!camera) return;
@@ -272,8 +289,10 @@ export function AddCameraModal({
                   type="button"
                   role="radio"
                   aria-checked={cameraId === item.id}
-                  className={cameraId === item.id ? "source-option selected" : "source-option"}
+                  aria-disabled={excludedDeviceIds.includes(item.id)}
+                  className={`${cameraId === item.id ? "source-option selected" : "source-option"}${excludedDeviceIds.includes(item.id) ? " is-disabled" : ""}`}
                   onClick={() => {
+                    if (excludedDeviceIds.includes(item.id)) return;
                     setCameraError(null);
                     setCameraId(item.id);
                     setCameraTry((current) => current + 1);
@@ -423,8 +442,8 @@ export function AddCameraModal({
               Continue
             </button>
           ) : (
-            <button type="button" className="start" disabled={source !== "device" || !cameraId || opening} onClick={finish}>
-              {source === "file" ? "Add Video File" : "Add vision"}
+            <button type="button" className="start" disabled={source === "file" ? !videoFile || purpose !== "dashboard" : source !== "device" || !cameraId || opening} onClick={finish}>
+              {source === "file" ? "Add Video File" : purpose === "dashboard" ? "Add feed" : "Add vision"}
             </button>
           )}
         </div>
