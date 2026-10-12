@@ -3407,8 +3407,8 @@ button {
 }
 
 .ios-toggle {
-  width: 51px;
-  height: 31px;
+  width: 36px;
+  height: 20px;
   display: flex;
   align-items: center;
   padding: 2px;
@@ -3427,8 +3427,8 @@ button {
 }
 
 .ios-toggle span {
-  width: 27px;
-  height: 27px;
+  width: 16px;
+  height: 16px;
   border-radius: 50%;
   background: #fff;
   box-shadow: 0 2px 4px rgba(0, 0, 0, 0.25);
@@ -3437,7 +3437,7 @@ button {
 }
 
 .ios-toggle.on span {
-  transform: translateX(20px);
+  transform: translateX(16px);
 }
 
 .ios-toggle:focus-visible {
@@ -3492,7 +3492,7 @@ button {
   background: var(--hover);
 }
 
-/* The user area is a button that opens Settings, where Plan and Usage live, and shows the plan while the sidebar is open. */
+/* The user area is the one way in: sign in first, Settings once signed in, with the plan shown while the sidebar is open. */
 
 .user-area {
   padding: 0;
@@ -3502,7 +3502,8 @@ button {
 }
 
 .user-area:hover,
-.user-area:focus-visible {
+.user-area:focus-visible,
+.user-area.active {
   background: var(--hover);
 }
 

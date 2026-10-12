@@ -3,7 +3,7 @@ import type { Session } from "@supabase/supabase-js";
 import { AddCameraModal } from "./components/AddCameraModal";
 import { SettingsPanel } from "./components/SettingsPanel";
 import { LoginPage } from "./components/LoginPage";
-import { isAuthConfigured, subscribeToAuthChanges } from "./auth/authService";
+import { isAuthConfigured, signOut, subscribeToAuthChanges } from "./auth/authService";
 import { Sidebar, type SectionId } from "./components/Sidebar";
 import { HomeOverview } from "./components/HomeOverview";
 import { VisionPanel } from "./components/VisionPanel";
@@ -57,6 +57,8 @@ export function App() {
   const { touch } = useProjects(write);
   const vision = useVisionPath(touch);
   const { plan } = useAccount();
+  // Sign in comes first; without a Supabase project there is nothing to sign in to, so the profile opens Settings.
+  const profile = authSession || !isAuthConfigured ? "settings" : "login";
   const [onCanvas, setOnCanvas] = useState<string[]>([]);
   useEffect(() => {
     const match = feeds.find((feed) => feed.cameraId === connectedId);
@@ -92,7 +94,8 @@ export function App() {
         active={section}
         name={authSession?.user.email || settings.displayName.trim() || "User"}
         image={settings.profileImage}
-        onProfileClick={() => setSection("login")}
+        onProfileClick={() => setSection(profile)}
+        profile={profile}
         plan={plan?.name ?? null}
         onChange={(id) => {
           if (id === "vision") vision.visit({ view: "list" });
@@ -214,7 +217,14 @@ export function App() {
             <p className="home-empty">You have no notifications.</p>
           </main>
         ) : (
-          <SettingsPanel settings={settings} onChange={updateSettings} />
+          <SettingsPanel
+            settings={settings}
+            onChange={updateSettings}
+            session={authSession}
+            onSignOut={() => {
+              void signOut().then(() => setSection("vision"));
+            }}
+          />
         )}
         </div>
       </div>

@@ -1,4 +1,5 @@
 import type { ReactNode } from "react";
+import type { Session } from "@supabase/supabase-js";
 import type { AppSettings, Resolution, ThemeName } from "../settings";
 import { AccountSettings } from "./AccountSettings";
 
@@ -7,9 +8,13 @@ export type { ThemeName };
 export function SettingsPanel({
   settings,
   onChange,
+  session,
+  onSignOut,
 }: {
   settings: AppSettings;
   onChange: (patch: Partial<AppSettings>) => void;
+  session: Session | null;
+  onSignOut: () => void;
 }) {
   return (
     <main className="settings-page">
@@ -107,6 +112,18 @@ export function SettingsPanel({
           </Row>
         </div>
       </section>
+      {session && (
+        <section className="settings-group">
+          <h2>Account</h2>
+          <div className="settings-card">
+            <Row title="Signed in as" detail={session.user.email ?? "Signed in"}>
+              <button type="button" className="settings-file" onClick={onSignOut}>
+                Log out
+              </button>
+            </Row>
+          </div>
+        </section>
+      )}
     </main>
   );
 }
